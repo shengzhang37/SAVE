@@ -11,7 +11,9 @@ Reinforcement learning is a general technique that allows an agent to learn an o
 (3). the value under an unknown optimal policy in on-policy settings (Section 4);
 (4). difference between the value under an unknown optimal policy and that under the behavior policy (Appendix B.2).
 
-For (1), we compare with the double reinforcement learning method (Kallus and Uehara and find the proposed SAVE method achieve better performance both theoretically (Appendix C.2) and numerically (see below) in settings where $(nT)^{-1/2}$-consistent estimation of the value is feasible.
+For (1), we compare with the double reinforcement learning method (Kallus and Uehara and find the proposed SAVE method achieve better performance both theoretically (Appendix C.2) and numerically (see below) in settings where parametric-rate estimation of the value is feasible.
+
+<img align="center" src="SAB.pdf" alt="drawing" width="600">
 
 ## Requirement
 
