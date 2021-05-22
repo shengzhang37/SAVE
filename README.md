@@ -6,10 +6,10 @@ This repository contains the implementation for the paper "Statistical Inference
 
 Reinforcement learning is a general technique that allows an agent to learn an optimal policy and interact with an environment in sequential decision making problems. The goodness of a policy is measured by its value function starting from some initial state. The focus of this paper is to construct confidence intervals (CIs) for a policy’s value in infinite horizon settings where the number of decision points diverges to infinity. The proposed inference method is generally applicable. In particular, we provide inferential tools for
 
-* the value under a fixed policy in off-policy settings (Section 3.1);
-* the value under an unknown optimal policy in off-policy settings (Section 3.2);
-* the value under an unknown optimal policy in on-policy settings (Section 4);
-* difference between the value under an unknown optimal policy and that under the behavior policy (Appendix B.2).
+1. the value under a fixed policy in off-policy settings (Section 3.1);
+2. the value under an unknown optimal policy in off-policy settings (Section 3.2);
+3. the value under an unknown optimal policy in on-policy settings (Section 4);
+4. difference between the value under an unknown optimal policy and that under the behavior policy (Appendix B.2).
 
 ## Requirement
 
