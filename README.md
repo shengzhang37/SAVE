@@ -5,7 +5,7 @@
 
 ## Summary
 
-In this project, we conduct Monte Carlo simulations to examine the finite sample performance of the proposed value inference method (SAVE).
+In this repository, we conduct experiment to examine the performance of the proposed value inference method (SAVE).
 
 ## Requirement
 
