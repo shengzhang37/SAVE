@@ -15,7 +15,7 @@ For 1, we compare with the double reinforcement learning method (Kallus and Ueha
 
 <img align="center" src="SAB.png" alt="drawing" width="750">
 
-For 2--4, we allow the setting to be nonregular where the optimal policy is not unique. We apply our method to a data from mobile health applications and find that reinforcement learning algorithms could help improve patient's health status. See the figure that depicts the CI of the value difference below.
+For 2--4, we allow the setting to be nonregular where the optimal policy is not unique. We apply our method to a dataset from mobile health applications and find that reinforcement learning algorithms could help improve patient's health status. See the figure that depicts the CI of the value difference below.
 
 <img align="center" src="CIplot1.png" alt="drawing" width="750">
 
