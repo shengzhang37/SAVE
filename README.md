@@ -1,11 +1,23 @@
-# Code for Statistical-Inference-of-the-Value-Function-for-Reinforcement-Learning-in-Infinite-Horizon-Settings (SAVE)
+# Statistical Inference of the Value Function for Reinforcement Learning in Infinite Horizon Settings
 
+This repository contains the implementation for the paper "Statistical Inference of the Value Function for Reinforcement Learning in Infinite Horizon Settings" in Python.
 
+## Summary of the paper
 
+Reinforcement learning is a general technique that allows an agent to learn an optimal policy and interact with an environment in sequential decision making problems. The goodness of a policy is measured by its value function starting from some initial state. The focus of this paper is to construct confidence intervals (CIs) for a policy’s value in infinite horizon settings where the number of decision points diverges to infinity. We provide inferential tools for
 
-## Summary
+1. the value under a fixed policy in off-policy settings (Section 3.1);
+2. the value under an unknown optimal policy in off-policy settings (Section 3.2);
+3. the value under an unknown optimal policy in on-policy settings (Section 4);
+4. difference between the value under an unknown optimal policy and that under the behavior policy (Appendix B.2).
 
-In this repository, we conduct experiment to examine the performance of the proposed value inference method (SAVE).
+For 1, we compare with the double reinforcement learning method (Kallus and Uehara and find the proposed SAVE method achieve better performance both theoretically (Appendix C.2) and numerically (see below) in settings where parametric-rate estimation of the value is feasible.
+
+<img align="center" src="SAB.png" alt="drawing" width="750">
+
+For 2--4, we allow the setting to be nonregular where the optimal policy is not unique. We apply our method to a dataset from mobile health applications and find that reinforcement learning algorithms could help improve patient's health status. See the figure that depicts the CI of the value difference below.
+
+<img align="center" src="CIplot1.png" alt="drawing" width="750">
 
 ## Requirement
 
