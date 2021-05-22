@@ -2,6 +2,11 @@
 
 
 
+
+## Summary
+
+In this project, we conduct Monte Carlo simulations to examine the finite sample performance of the proposed value inference method (SAVE).
+
 ## Requirement
 
 + Python3
@@ -26,13 +31,13 @@
 ## How to Run the Files
 
 
-
-
 ### Experiment on Simulation:
 
 
 `from src.exp_est_pol_int import *`
+
 `main_get_value() # get true value by repetitions` 
+
 `main()`
 
 
@@ -40,14 +45,15 @@
 
 
 `from src.exp_est_pol import *`
+
 `main_realdata(patient = 0, reward_dicount = 0.5, S_init_time = 396)`
 
 
 ### Experiment on Cliffwalk:
 
-The DRL is modified from [original code](https://github.com/CausalML/DoubleReinforcementLearningMDP.git) in cliffwalking_exp/cw_notebook_ver_splitting.ipynb
+The DRL is modified from [original code](https://github.com/CausalML/DoubleReinforcementLearningMDP.git) in `cliffwalking_exp/cw_notebook_ver_splitting.ipynb`
 
-Our experiment is conducted in cliffwalking_exp/SAVE_cliffwalking.ipynb
+Our experiment is conducted in `cliffwalking_exp/SAVE_cliffwalking.ipynb`
 
 
 
