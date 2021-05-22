@@ -13,7 +13,11 @@ Reinforcement learning is a general technique that allows an agent to learn an o
 
 For 1, we compare with the double reinforcement learning method (Kallus and Uehara and find the proposed SAVE method achieve better performance both theoretically (Appendix C.2) and numerically (see below) in settings where parametric-rate estimation of the value is feasible.
 
-<img align="center" src="SAB.png" alt="drawing" width="600">
+<img align="center" src="SAB.png" alt="drawing" width="750">
+
+For 2--4, we allow the setting to be nonregular where the optimal policy is not unique. We apply our method to a data from mobile health applications and find that reinforcement learning algorithms could help improve patient's health status. See the figure that depicts the CI of the value difference below.
+
+<img align="center" src="CIplot1.png" alt="drawing" width="750">
 
 ## Requirement
 
