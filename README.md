@@ -13,7 +13,7 @@ Reinforcement learning is a general technique that allows an agent to learn an o
 
 For 1, we compare with the double reinforcement learning method (Kallus and Uehara and find the proposed SAVE method achieve better performance both theoretically (Appendix C.2) and numerically (see below) in settings where parametric-rate estimation of the value is feasible.
 
-<img align="center" src="SAB.pdf" alt="drawing" width="600">
+<img align="center" src="SAB.png" alt="drawing" width="600">
 
 ## Requirement
 
