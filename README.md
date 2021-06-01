@@ -36,7 +36,7 @@ For 2--4, we allow the setting to be nonregular where the optimal policy is not 
     + exp_est_pol.py: Experiment for Value inference for fixed initial state under estimated policy
     + exp_est_pol_int.py: Experiment for Value inference for integrated initial state under estimated policy
     
-+ Ohio_data: Preprocessed Ohio Data
++ Ohio_data: source : http://smarthealth.cs.ohio.edu/OhioT1DM-dataset.html
 
 + cliffwalking_exp: experiment on cliffwalking
 
