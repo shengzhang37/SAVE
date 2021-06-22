@@ -31,7 +31,7 @@ For 2--4, we allow the setting to be nonregular where the optimal policy is not 
 + src
     + AGENT.py : Main object for SAVE model
     + utility.py: utility functions
-    + exp.py: Experiment for Value inference for fixed initial state under behavior policy
+    + exp.py: Experiment for Value inference for fixed initial state under behavior policy (Not included in paper)
     + exp_int.py: Experiment for Value inference for integrated initial state under behavior policy
     + exp_est_pol.py: Experiment for Value inference for fixed initial state under estimated policy
     + exp_est_pol_int.py: Experiment for Value inference for integrated initial state under estimated policy
