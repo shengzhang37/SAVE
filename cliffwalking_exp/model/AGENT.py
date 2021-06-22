@@ -83,9 +83,9 @@ class Agent(object):
         if seed is None and S_init is None: 
             S = self.env.reset()
         elif seed is not None:
-            #np.random.seed(seed) ## <- 这个也set就完全不会变了。。
+            #np.random.seed(seed) 
             #random.seed(seed)
-            self.env.seed(seed) ## 这个可变的范围就很小了。可以当作是加入了一个random disturb
+            self.env.seed(seed) 
             S = self.env.reset()
         elif S_init is not None:
             S = self.env.reset(S_init)
@@ -278,7 +278,7 @@ class simulation(Agent):
         for i in range(self.dims_state):
             tmp = []
             for j in range(37):
-                def spf(x, j = j): ## global variable要慎重使用。。。
+                def spf(x, j = j): 
                     return (x < (j / 47) + (1/48)) * (x > (j / 47) - (1/48))  ## note: The x has been normalized
                 tmp.append(spf)
             self.bspline.append(tmp)
@@ -388,7 +388,7 @@ class simulation(Agent):
                                                #  max([self.Q(S[i + 1], i, predictor = False) 
                                                #       for i in range(self.nums_action)]))
 
-                    else:  ## 在T_i上的cumulated reward就是直接的reward了
+                    else:  
                         target[int(A[i])].append(Y[i])
                     f[int(A[i])].append(self.Q(S[i],A[i], predictor = True))
                     
@@ -430,7 +430,7 @@ class simulation(Agent):
                                                #  max([self.Q(S[i + 1], i, predictor = False) 
                                                #       for i in range(self.nums_action)]))
 
-                    else:  ## 在T_i上的cumulated reward就是直接的reward了
+                    else:  
                         target[int(A[i])].append(Y[i])
                     f[int(A[i])].append(self.Q(S[i],A[i], predictor = True))
                     
@@ -511,7 +511,7 @@ class simulation(Agent):
                     A = self.buffer[i][1][j]
                     Y = self.buffer[i][2][j]
                     if Y  < -10:
-                        ##  deal with terminate state which Y == -100.. 需要吗？
+                        ##  deal with terminate state which Y == -100
                         output += (np.matmul( self._Xi(S, A) , (self._Xi(S, A)).T))
                     else:
                         output += (np.matmul( self._Xi(S, A) , (self._Xi(S, A) - self.gamma * self._U(S_next, policy = policy)).T))
@@ -588,7 +588,7 @@ class simulation(Agent):
     #### for S_init individual
     def _sigma(self, policy, S, block = False):
         self._Omega_hat(policy, block = block)
-        self.sigma2 = reduce(np.matmul, [self._U(S, policy).T, self.inv_Sigma_hat, self.Omega, self.inv_Sigma_hat.T, self._U(S, policy)]) ## 注意这儿对self._U()输入的是policy而不是self.policy！！这样不会因为self._Omega_hat()的update而改变输入。
+        self.sigma2 = reduce(np.matmul, [self._U(S, policy).T, self.inv_Sigma_hat, self.Omega, self.inv_Sigma_hat.T, self._U(S, policy)]) 
 
     def inference(self, policy, S, alpha = 0.05, block = False):
         self._sigma(policy, S, block = block) ## estimate the beta
@@ -645,11 +645,11 @@ class simulation(Agent):
         #####          <-- wrong!! fitted_Q should always be False ! depreciated!!
         ############################################################################################################
         
-        self._sigma_int(policy, U_int_store = U_int_store, block = block, MC_N = MC_N) ## 这儿输入的就是policy，不会因为update para而
-                                                                                       ## 改变。而之所以要改变就是为了计算sigma方便
+        self._sigma_int(policy, U_int_store = U_int_store, block = block, MC_N = MC_N) 
+                                                                                       
         print("start getting V value (slow.. need to numerical integration)....")
         start = time.time()
-        V = self.V_int(policy, MC_N) # 对的
+        V = self.V_int(policy, MC_N) 
         print("Finshed! cost %d time" % (time.time() - start))
         return V - norm.ppf(1 - alpha/2) * (self.sigma2 ** 0.5) / (self.total_T ** 0.5), V + norm.ppf(1 - alpha/2) * (self.sigma2 ** 0.5) / (self.total_T ** 0.5)
     

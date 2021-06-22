@@ -21,7 +21,7 @@ class setting():
             self.last_ob = S_init
         return self.last_ob 
     def seed(self, seed):
-        np.random.seed(seed) # 就让np seed， randint就不seed了。。
+        np.random.seed(seed) 
 
     def step(self, A):
         if self.observation_space.shape[0] == 2:
@@ -89,7 +89,7 @@ class setting_DR():
             self.last_ob = S_init
         return self.last_ob 
     def seed(self, seed):
-        np.random.seed(seed) # 就让np seed， randint就不seed了。。
+        np.random.seed(seed) 
 
     def step(self, A):
         self.count += 1

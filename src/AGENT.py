@@ -8,25 +8,19 @@ import os
 import pickle
 import os.path
 import time
-
 from scipy.interpolate import BSpline
-
 from sklearn import linear_model
 from sklearn.linear_model import LinearRegression
-
 from numpy.linalg import inv
 from functools import reduce
-
 from scipy.stats import norm
 from scipy import integrate
 from scipy.stats import norm
 from tqdm import tqdm
 
-def sigmoid(x, beta = 1):
-    return 1/(1 + np.exp(-beta * x)) 
 
 class simulation(object):
-    def __init__(self, env, n = 50, scale = "NormCdf", product_tensor = True, reward_dicount = 0.5):
+    def __init__(self, env, n = 50, scale = "NormCdf", product_tensor = True, reward_dicount = 0.5, use_confounder = False):
         #############################################################################
         #############################################################################
         ### self.env : store the dynamic environment
@@ -51,9 +45,10 @@ class simulation(object):
         self.n = n
         self.gamma = reward_dicount
         self.buffer = {}
-        # self.obs_policy =  lambda S : self.env.action_space.sample()
-        # self.obs_policy =  lambda S : np.random.binomial(1, min((S[0]**2 + S[1]**2)/ 4, 1 ))
-        self.obs_policy = lambda S : np.random.binomial(1, min( (sigmoid(S[0]) + sigmoid(S[1])) / 2, 1 )) ## confounder
+        if use_confounder:
+            self.obs_policy = lambda S : np.random.binomial(1, min( (sigmoid(S[0]) + sigmoid(S[1])) / 2, 1 )) ## confounder
+        else:
+            self.obs_policy =  lambda S : self.env.action_space.sample()
         self.nums_action = self.env.action_space.n
         self.dims_state = self.env.observation_space.shape[0]
         self.last_obs = np.random.normal(0,1,self.dims_state * self.n).reshape(self.n, self.dims_state)
@@ -64,7 +59,6 @@ class simulation(object):
             self.scaler = iden()
         self.knot = None 
         self.para_dim = None 
-
         self.product_tensor = product_tensor
 
         
@@ -84,16 +78,13 @@ class simulation(object):
         #############################################################################
         ######### OUTPUT: state, action, utility trajectory and T ###################
         #############################################################################
-        
         if policy is None:
             policy = self.obs_policy
         ## initialize the state
         if seed is None and S_init is None: 
             S = self.env.reset()
         elif seed is not None:
-            #np.random.seed(seed) ## <- 这个也set就完全不会变了。。
-            #random.seed(seed)
-            self.env.seed(seed) ## 这个可变的范围就很小了。可以当作是加入了一个random disturb
+            self.env.seed(seed) 
             S = self.env.reset()
         elif S_init is not None:
             S = self.env.reset(S_init)
@@ -198,7 +189,6 @@ class simulation(object):
                                         U))
             output.append(est_Value)
             A_percent.append(np.mean(A))
-            #value.append(np.mean(self.Q(S[0],A[0])))
             value.append(0)
             if lower_b or upper_b is not None:
                 if est_Value >= lower_b and est_Value <= upper_b:
@@ -221,7 +211,7 @@ class simulation(object):
         self.knot = np.quantile(scale_data, np.linspace(0,1,L + 1), axis=0)
         self.bspline = []
 
-        self.para_dim = [1 if self.product_tensor else 0][0] ################ if dimension of state is more than 2, we use additive tensor ############
+        self.para_dim = [1 if self.product_tensor else 0][0]
         for i in range(self.dims_state):
             tmp = []
             for j in range(L - d):
@@ -230,7 +220,7 @@ class simulation(object):
                 spf = BSpline(self.knot.T[i], cof, d)
                 tmp.append(spf)
             self.bspline.append(tmp)
-        ############### if dimension of state is more than 2, we use additive tensor ############
+        ############### if dimension of state is more than 2, we use additive tensor in experiments ############
             if self.product_tensor:
                 self.para_dim *= len(self.bspline[i])
             else:
@@ -262,8 +252,9 @@ class simulation(object):
         ########################################################################################
         if predictor: 
             return output
-        # it is used for caculating 
+        
         else: 
+            # Double Q iteration
             if double:
                 return sum(map(operator.mul, output, self.para_2[int(A)])) ## <- apply double Q!
             else:
@@ -271,13 +262,11 @@ class simulation(object):
     
     def V(self, S, policy):
         ###
-        ## to do use MC to change it..
+        ## todo: use MC to change it..
         ##
         return self.Q(S, policy(S))
     
     def V_int(self, policy, MC_N = None):
-        
-        #return integrate.dblquad(f, np.NINF, np.Inf, lambda x: np.NINF, lambda x: np.Inf)
         if MC_N is None:
             f = lambda y,x : self.V(policy = policy, S = (x,y)) * norm.pdf(y) * norm.pdf(x)
             return integrate.dblquad(f, -5, 5, lambda x: -5, lambda x: 5)[0]
@@ -294,40 +283,29 @@ class simulation(object):
     
     def update_op(self, shuffle = False, batch = None, double = True, Lasso = False): ## Q^*
         ## obtain predictor and reponse
-        
         ## target and and predictor(f) in Q learning which is used for for linear prediction
         target = {}
         f = {}
         for i in range(self.nums_action):
             target[i] = []
             f[i] = []
-        ## shuffle the buffer: if true shuffle the order, other wise don't and apply linear regression to all 
+        ## shuffle the buffer: if true shuffle the order, otherwise apply linear regression to all directly
         if shuffle:
-            1
+            1 # to add
         else:
             for k in range(len(self.buffer)):
-                #S_scale = self.scaler.transform(self.buffer[k][0])
                 S = self.buffer[k][0]
                 A = self.buffer[k][1]
                 Y = self.buffer[k][2]
                 T = self.buffer[k][3]
                 for i in range(T):
                     if i < T - 1:
-                       
-                        """
-                        todo: change i to j, notation abuse
-                        """
-                        a_star = np.argmax([self.Q(S[i + 1], i, predictor = False, double = double) 
-                                                     for i in range(self.nums_action)]) 
-                        # a_star = np.argmax([self.Q(S[i + 1], j, predictor = False, double = double) 
-                        #                              for j in range(self.nums_action)]) ## use double Q learning..
-
+                        a_star = np.argmax([self.Q(S[i + 1], j, predictor = False, double = double) 
+                                                     for j in range(self.nums_action)]) ## use double Q learning..
                         target[int(A[i])].append(Y[i]  + 
                                                  self.gamma * self.Q(S[i + 1], a_star, predictor = False) )
-                                               #  max([self.Q(S[i + 1], i, predictor = False) 
-                                               #       for i in range(self.nums_action)]))
 
-                    else:  ## 在T_i上的cumulated reward就是直接的reward了
+                    else: 
                         target[int(A[i])].append(Y[i])
                     f[int(A[i])].append(self.Q(S[i],A[i], predictor = True))
                     
@@ -341,79 +319,7 @@ class simulation(object):
             reg.fit(np.array(f[i]), np.array(target[i]))
             self.para[i] = reg.coef_
             
-    def update_op_policy(self, policy, shuffle = False, batch = None): ## Q^\pi
-        ## obtain predictor and reponse
-        
-        ## target and and predictor(f) in Q learning which is used for for linear prediction
-        target = {}
-        f = {}
-        for i in range(self.nums_action):
-            target[i] = []
-            f[i] = []
-        ## shuffle the buffer: if true shuffle the order, other wise don't and apply linear regression to all 
-        if shuffle:
-            1
-        else:
-            for k in range(len(self.buffer)):
-                #S_scale = self.scaler.transform(self.buffer[k][0])
-                S = self.buffer[k][0]
-                A = self.buffer[k][1]
-                Y = self.buffer[k][2]
-                T = self.buffer[k][3]
-                for i in range(T):
-                    if i < T - 1:
-                        if policy == "observed_behavior":
-                            target[int(A[i])].append(Y[i]  + 
-                                                 self.gamma * self.Q(S[i + 1], A[i + 1], predictor = False) )
-                        else:    
-                            target[int(A[i])].append(Y[i]  + 
-                                                 self.gamma * self.Q(S[i + 1], policy(S[i + 1]), predictor = False) )
-                                               #  max([self.Q(S[i + 1], i, predictor = False) 
-                                               #       for i in range(self.nums_action)]))
 
-                    else:  ## 在T_i上的cumulated reward就是直接的reward了
-                        target[int(A[i])].append(Y[i])
-                    f[int(A[i])].append(self.Q(S[i],A[i], predictor = True))
-                    
-        ## use target and f to update the parameters 
-        self.para_2 = self.para.copy()
-        for i in range(self.nums_action):
-            reg = LinearRegression(fit_intercept  = False)
-            reg.fit(np.array(f[i]), np.array(target[i]))
-            self.para[i] = reg.coef_
-            
-
-    def update_estimation_behavior(self, shuffle = False, batch = None):
-        self.para_behavior = {}
-        ## obtain predictor and reponse
-        
-        ## target and and predictor(f) in Q learning which is used for for linear prediction
-        target = []
-        f = []
-        
-        ## shuffle the buffer: if true shuffle the order, other wise don't and apply linear regression to all 
-        if shuffle:
-            1
-        else:
-            for k in range(len(self.buffer)):
-                #S_scale = self.scaler.transform(self.buffer[k][0])
-                S = self.buffer[k][0]
-                A = self.buffer[k][1]
-                Y = self.buffer[k][2]
-                T = self.buffer[k][3]
-                for i in range(T):
-                    if i < T - 1:
-                        target.append(A[i])
-
-                    else:  ## 在T_i上的cumulated reward就是直接的reward了
-                        target.append(A[i])
-                    f.append(self.Q(S[i],A[i], predictor = True))
-
-        reg = LinearRegression(fit_intercept  = False)
-        reg.fit(np.array(f), np.array(target))
-        self.para_behavior = reg.coef_
-        self.reg_estimation_behavior = reg
-        
 
     ########################################
     ######### obtain the optimal policy ####
@@ -482,12 +388,10 @@ class simulation(object):
                     A = self.next_block[i][1][j]
                     Y = self.next_block[i][2][j]
                     output += (np.matmul( self._Xi(S, A) , (self._Xi(S, A) - self.gamma * self._U(S_next, policy = policy)).T))
-                    
-                    #output_2 += Y * self._Xi(S,A)  !!
                     output_2 += Y * self._Xi(S,A) 
         self.total_T = total_T
         """
-        modified on 12.23, add ridge can avoid overfitting!
+        Add ridge can avoid overfitting!
         """
         self.Sigma_hat =  np.diag([10 ** (-9)] * output.shape[0])  +  output / total_T
         # self.Sigma_hat =  output / total_T
@@ -547,9 +451,8 @@ class simulation(object):
     #### for S_init individual
     def _sigma(self, policy, S, block = False):
         self._Omega_hat(policy, block = block)
-        self.sigma = reduce(np.matmul, [self._U(S, policy).T, self.inv_Sigma_hat, self.Omega_sqrt]) ## 注意这儿对self._U()输入的是policy而不是self.policy！！这样不会因为self._Omega_hat()的update而改变输入。
-        
-        self.sigma2 = reduce(np.matmul, [self._U(S, policy).T, self.inv_Sigma_hat, self.Omega, self.inv_Sigma_hat.T, self._U(S, policy)]) ## 注意这儿对self._U()输入的是policy而不是self.policy！！这样不会因为self._Omega_hat()的update而改变输入。
+        self.sigma = reduce(np.matmul, [self._U(S, policy).T, self.inv_Sigma_hat, self.Omega_sqrt])
+        self.sigma2 = reduce(np.matmul, [self._U(S, policy).T, self.inv_Sigma_hat, self.Omega, self.inv_Sigma_hat.T, self._U(S, policy)]) 
 
     def inference(self, policy, S, alpha = 0.05, block = False):
         self._sigma(policy, S, block = block) ## estimate the beta
@@ -595,7 +498,6 @@ class simulation(object):
                 U_int = np.array(U_int)
                 pickle.dump(U_int, open(filename, "wb"))
             
-            
         ## get sigma2
         print("start obtaining sigma2....")
         self.sigma2 = reduce(np.matmul, [U_int.T, self.inv_Sigma_hat, self.Omega, self.inv_Sigma_hat.T, U_int])
@@ -610,14 +512,13 @@ class simulation(object):
         #####          U_int_store = None : we use MC to get numerical integration for U <-- it need MC is not None
         ##### Note 3 : fitted_Q = False : we use LSE to re-calculate the self.para
         #####          fitted_Q = True : we use current stored self.para (according to the main_est*, it is fitted-Q).
-        #####          <-- wrong!! fitted_Q should always be False ! depreciated!!
+        #####          <-- fitted_Q should always be False.
         ############################################################################################################
         
-        self._sigma_int(policy, U_int_store = U_int_store, block = block, MC_N = MC_N) ## 这儿输入的就是policy，不会因为update para而
-                                                                                       ## 改变。而之所以要改变就是为了计算sigma方便
+        self._sigma_int(policy, U_int_store = U_int_store, block = block, MC_N = MC_N) 
         print("start getting V value (slow.. need to numerical integration)....")
         start = time.time()
-        V = self.V_int(policy, MC_N) # 对的
+        V = self.V_int(policy, MC_N) 
         print("Finshed! cost %d time" % (time.time() - start))
         return V - norm.ppf(1 - alpha/2) * (self.sigma2 ** 0.5) / (self.total_T ** 0.5), V + norm.ppf(1 - alpha/2) * (self.sigma2 ** 0.5) / (self.total_T ** 0.5)
     

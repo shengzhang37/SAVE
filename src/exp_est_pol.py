@@ -40,13 +40,6 @@ def get_sign(s):
 
 #### obtain estimated optimal policy ###
 
-
-
-
-def get_sign(s):
-    if s > 0:
-        return "+"
-    else: return "-"
     
     
 def off_policy_value(T = 120, n = 1000, n_train = 100, beta = 3/7, S_init = (0.5, 0.5), error_bound = 0.005, terminate_bound = 50, rep = 100):
@@ -76,7 +69,7 @@ def off_policy_value(T = 120, n = 1000, n_train = 100, beta = 3/7, S_init = (0.5
     # need  re-specify n ###########
     ################################
     ################################
-    a.n = n_train ## 这样以来evaluate 的时候就只生成n_train.
+    a.n = n_train 
     ## evaluate the trained policy
     output, A_percent, _  = a.evaluate_policy(policy = a.opt_policy, seed = None, S_init = S_init, n = rep) 
     print("output: %.3f(%.2f)" %(np.mean(output), np.std(output)/(rep **0.5)))
@@ -90,9 +83,23 @@ def off_policy_value(T = 120, n = 1000, n_train = 100, beta = 3/7, S_init = (0.5
 ### Construct CI for True value ###
 
 def main(seed = 1, T = 120, n = 100, T_min = 30, n_min = 25, beta = 3/7, S_init = (0.5, 0.5), error_bound = 0.01, N = 10, alpha = 0.05, terminate_bound = 15):
-    
+    """
+    input: 
+        seed: random seed
+        T : trajectory length
+        n: sample size
+        T_min: trajectory length in each block
+        n_min: sample size in each block
+        beta: it is used to calculate the size of bspline basis
+        S_init : make inference of specifc state initial 
+        error_bound: stop error bound for double fitted q learning
+        terminate_bound: iteration bound for double fitted q learning
+        alpha: significance level
+        N: repetions
+    output:
+        store inference result in filename_CI
+    """
     ## obtain estimated mean
-    #filename = 'opt_value_store_T_%d_n_%d_S_init_%s%s' %(T, n, get_sign(S_init[0]), get_sign(S_init[1]))
     try:
         filename = 'opt_value_store_T_%d_n_%d_S_init_%s%s' %(500, 500, get_sign(S_init[0]), get_sign(S_init[1])) ## make decision
         outfile = open(filename,'rb')
@@ -103,12 +110,9 @@ def main(seed = 1, T = 120, n = 100, T_min = 30, n_min = 25, beta = 3/7, S_init 
     except:
         est_mean = 0
         mc_error = 0
-    
     ## Store the CI!!
-    
     filename_CI = 'CI_store_T_%d_n_%d_S_init_%s%s' %(T, n, get_sign(S_init[0]), get_sign(S_init[1]))
     outfile_CI = open(filename_CI, 'ab')
-
     ## use our method to get CI for the est_mean
     count = 0
     V_tilde_list = [] # store the V_tilde in N repetition
@@ -116,17 +120,12 @@ def main(seed = 1, T = 120, n = 100, T_min = 30, n_min = 25, beta = 3/7, S_init 
     ## repeat it N times:
     for i in range(N):
         np.random.seed(((1 + seed) * N + (i + 1)) * 123456)
-        
         result_V, result_sigma = [], [] # store V and sigma in each block in one repetition
-
         env = setting(T = T)
         a = simulation(env, n = n)
-
         L = int(np.sqrt((n * T) ** beta))
-
         K_n = n // n_min
         K_T = T // T_min
-
         a.buffer_next_block(n_min, T_min, T, n = None )
         for rep in range(K_n * K_T - 1):
             a.append_next_block_to_buffer()
@@ -149,45 +148,40 @@ def main(seed = 1, T = 120, n = 100, T_min = 30, n_min = 25, beta = 3/7, S_init 
             print("current index is (%d, %d), length of current buffer %d , length of first one %d, value is %.2f, sigma2 is %.2f "%(a.current_block_idx[0], a.current_block_idx[1], len(a.buffer), a.buffer[0][3], V, a.sigma2))
             result_V.append(V)
             result_sigma.append(np.sqrt(a.sigma2))
-            
-
         K = len(result_sigma) + 1
         V_tilde = np.sum([result_V[i] / result_sigma[i] for i in range(K - 1)]) /  np.sum([1/ result_sigma[i] for i in range(K - 1)])
         sigma_tilde = (K - 1) / np.sum([1/ result_sigma[i] for i in range(K - 1)])
         lower_bound = V_tilde - norm.ppf(1 - alpha/2) * sigma_tilde / (n * T * (K - 1) /(K))**0.5
         upper_bound = V_tilde + norm.ppf(1 - alpha/2) * sigma_tilde / (n * T * (K - 1) /(K))**0.5
-        
         print("sigma_tilde", sigma_tilde, "V_tilde", V_tilde, "n", n, "T", T, lower_bound, upper_bound)
         ####################################################
-        pickle.dump([lower_bound,upper_bound], outfile_CI) ## 存CI！！！
+        pickle.dump([lower_bound,upper_bound], outfile_CI) ## store CI
         ####################################################
-        
         V_tilde_list.append(V_tilde)
         CI_length_list.append(upper_bound - lower_bound)
         if est_mean > lower_bound and est_mean < upper_bound:
             count += 1
     outfile_CI.close()
     print(count / N)
-    ### simulation 2的结果都放在RESULT_里面
     f = open("RESULT_opt_pol_T_%d_n_%d_S_init_%s%s_(K_n_%d_K_T_%d).txt" %(T,n, get_sign(S_init[0]), get_sign(S_init[1]), K_n, K_T), "a+")
     f.write("Count %d in %d, estimated mean: %f(MC error: %f), V_tilde_mean: %f (CI length : %f) \r\n" % (count, N, est_mean, mc_error, np.mean(V_tilde_list), np.mean(CI_length_list) ))
     f.close()
     
     
 
-    
-####################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################   
-    
-#################################################################################
-### Construct CI for True value #################################################
-#################################################################################
+##############################################################################################################
+############################################################################################################## 
 
-    
-####################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################   
+"""
+Below are application of OhioT1DM datasets
+"""
 
+## The source data is from  http://smarthealth.cs.ohio.edu/OhioT1DM-dataset.html
+## the data is preprocessed by R code Ohio_data/data_clean.R
 
-def imputeNaN(a): ## impute Nan with colmean
-    
+## impute Nan with colmean
+
+def imputeNaN(a): 
     if len(a.shape) == 1:
         l = a.copy().reshape(-1,1)
     else:
@@ -197,10 +191,11 @@ def imputeNaN(a): ## impute Nan with colmean
     l[inds] = np.take(col_mean, inds[1])
     return l
     
-def extract_mdp(csv_name = 'person1-5min.csv', time_interval = 36, gamma_carb = 0.9, cutoff = 0.1): # time_interval = 36 ## 12 means 1 hour, 36 means 3 hours ## time_interval = 6 has bad result...
+## Extract MDP components including State (S), Action (A), Reward (Y) for Ohio Data
+
+def extract_mdp(csv_name = 'person1-5min.csv', time_interval = 36, gamma_carb = 0.9, cutoff = 0.1): # time_interval = 36 ## 12 means 1 hour, 36 means 3 hours 
     ### read data
     data = pd.read_csv(csv_name)
-    
     ### get carb_discount
     carb = []
     discount = []
@@ -226,7 +221,6 @@ def extract_mdp(csv_name = 'person1-5min.csv', time_interval = 36, gamma_carb = 
     dose = []
     carb = []
     stability = []
-    
     for i in range(len(data)//time_interval):
         start = i * time_interval
         end = i * time_interval + time_interval
@@ -234,23 +228,21 @@ def extract_mdp(csv_name = 'person1-5min.csv', time_interval = 36, gamma_carb = 
         glucose.append(np.nanmean(data.iloc[start : end]["glucose"]))
         ## use discount-carb to get carb by discount way
         carb.append(np.nanmean(carb_discount[start : end]))
-        
         dose.append(np.sum(data.iloc[start : end]["dose"]))
         ## get stability
         stability.append(np.nanmean(data.iloc[start : end]["stability"]))
-
     #### construct S,A,Y
-    
     S = np.array((rate, carb, glucose)).T ## rate carb glucose
     #S = np.array((rate, carb)).T
     A = 1 * (np.array(dose) > cutoff) ## cutoff for effective action
     Y = np.array(stability)
-    
     S, A, Y = imputeNaN(S), imputeNaN(A), imputeNaN(Y)
-    
     ## scale the state! because in normcdf, un-scale will push to 1
     S = preprocessing.scale(S)
     return S, A.reshape(-1), Y.reshape(-1)
+
+
+## find valid initial time point where second dimension of state (carb) is greater than 0.1
 
 def find_valid_init(S):
     for i in range(len(S)):
@@ -258,7 +250,25 @@ def find_valid_init(S):
             break
     return i
 
-def main_realdata(patient = 0, error_bound = 0.01, terminate_bound = 15, alpha = 0.05, time_interval = 6, gamma_carb = 0.9, cutoff = 0.1, product_tensor = False, Lasso = False, reward_dicount = 0.5, S_init_time = 396): ## patient 0 ~ 5 代表不同的病人的initial, ## S_init_time means the initial time: 396 = (9 + 24) * 60 / 5 corresponds to day 1 9:00 am
+
+## apply SAVE method to Ohio Data
+
+def main_realdata(patient = 0, error_bound = 0.01, terminate_bound = 15, alpha = 0.05, time_interval = 36, gamma_carb = 0.9, cutoff = 0.1, product_tensor = False, Lasso = False, reward_dicount = 0.5, S_init_time = 396): 
+    """
+    Input:
+        patient = 0 ~ 5 represent different patient
+        error_bound: stop error bound for double fitted q learning
+        terminate_bound: iteration bound for double fitted q learning
+        alpha: significance level
+        time_interval = 36 means 36 * 5 = 180 mins as one datapoint
+        gamma_carb : decay rate for carb
+        cutoff : > cutoff means valid action
+        product_tensor: if True we use product bspline, otherwise, we use additive bslpline
+        Lasso: if True, use Lasso loss in  double fitted q learning update
+        reward_dicount: reward discount decay rate
+        S_init_time: it means the initial time: 396 = (9 + 24) * 60 / 5 corresponds to day 1 9:00 am
+    """
+
     S = {}
     A = {}
     Y = {}
@@ -272,10 +282,8 @@ def main_realdata(patient = 0, error_bound = 0.01, terminate_bound = 15, alpha =
     #### choose the initial point and get initial state (S_init) and observed value (true_value)
     init_time_point = int(S_init_time/time_interval) ## init_time_point means the S_init_time's corresponding 
     S_init = S[patient][init_time_point]
-    
     discount = [ reward_dicount **(i) for i in range(len(Y[patient][init_time_point:]))]
     true_value = np.sum(list(map(operator.mul, Y[patient][init_time_point:], discount)))
-    
     result_V, result_sigma = [], []
     ### remove the unused data for S, A, Y
     for i in range(6):
@@ -283,31 +291,25 @@ def main_realdata(patient = 0, error_bound = 0.01, terminate_bound = 15, alpha =
         S[i] = S[i][cut_point : ]
         Y[i] = Y[i][cut_point : ]
         A[i] = A[i][cut_point : ]
-    
     T = min(S[i].shape[0] for i in range(6))
     n = 6 ## 6 patients
     beta = 3/7 ## tuning parameter for number of basis
     n_min = 6 ## ## 6 patient per block
-    T_min = int(100  * 36 / time_interval) ## 这是当 time_interval = 36 时的选择当  time_interval = 6 的时候取 T_min = 600 就是4个block
+    T_min = int(100  * 36 / time_interval) 
     env = setting(T = T, dim = 3)
     #### we can manipulate reward discount too
     a = simulation(env, n = n, product_tensor = product_tensor, reward_dicount = reward_dicount) ## control the product tensor
     #a.gamma = 0.9 ## choose longer tail?
-    
     L = int(np.sqrt((n * T_min) ** beta))
     print("number of basis: ", L)
-
     K_n = n // n_min
     K_T = T // T_min
-
     a.buffer_next_block(n_min, T_min, T, n = None )
     ## replace the next block (simulated data) by the real data
     next_block = {}
     for i in range(6):
         next_block[i] = [ list(S[i][0:(T_min + 1)]), list(A[i][0:T_min]), list(Y[i][0:T_min]), len(list(A[i][0:T_min]))]
     a.next_block = next_block
-
-
     for rep in range(K_n * K_T - 1):
         a.append_next_block_to_buffer()
         if product_tensor:
@@ -336,22 +338,16 @@ def main_realdata(patient = 0, error_bound = 0.01, terminate_bound = 15, alpha =
         print("current index is (%d, %d), length of current buffer %d , length of first one %d, value is %.2f, sigma2 is %.2f "%(a.current_block_idx[0], a.current_block_idx[1], len(a.buffer), a.buffer[0][3], V, a.sigma2))
         result_V.append(V)
         result_sigma.append(np.sqrt(a.sigma2))
-
     print("dimension of basis spline", a.para_dim)
     K = len(result_sigma) + 1
     V_tilde = np.sum([result_V[i] / result_sigma[i] for i in range(K - 1)]) /  np.sum([1/ result_sigma[i] for i in range(K - 1)])
     sigma_tilde = (K - 1) / np.sum([1/ result_sigma[i] for i in range(K - 1)])
-
     lower_bound = V_tilde - norm.ppf(1 - alpha/2) * sigma_tilde / (n * T * (K -1) /(K))**0.5
     upper_bound = V_tilde + norm.ppf(1 - alpha/2) * sigma_tilde / (n * T * (K -1) /(K))**0.5
-    
-    
     if upper_bound > true_value:
         useful = 1
     else:
         useful = 0
-    
-    
     f = open("Real_data_gamma_carb_%.2f_cutoff_%.2f_time_inteval_%d_Lasso_%d_product_tensor_%d_reward_dicount_%.2f_S_init_time_%d.txt" % (gamma_carb, cutoff, time_interval, int(Lasso), int(product_tensor), reward_dicount, S_init_time ), "a+")
     f.write("For patient %d, lower_bound is %.3f, upper bound is %.3f, true_value is %.3f \r\n useful : %d \r\n" % (patient, lower_bound, upper_bound, true_value, useful))
     f.close()

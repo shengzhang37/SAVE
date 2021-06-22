@@ -21,8 +21,7 @@ from scipy import integrate
 from .utility import *
 from .AGENT import *
 from tqdm import tqdm
-#######################################################################################
-#######################################################################################
+
 ## construct target policy
 
 def target_policy(S):
@@ -30,6 +29,8 @@ def target_policy(S):
         return 1
     else: return 0
     
+## get the true value estimation by MC repetition
+
 def main_get_value(T_List = [30], rep = 1000000):
     value_store = {}
     
@@ -52,6 +53,18 @@ def main_get_value(T_List = [30], rep = 1000000):
 ## main function
 
 def main(seed = 1, T = 30, n = 25, N = 50, beta = 3/7, U_int_store = None):
+    """
+    input: 
+        seed: random seed
+        T : trajectory length
+        n: sample size
+        N: repetions
+        beta: it is used to calculate the size of bspline basis
+        U_int_store = None : we use MC to get numerical integration for U 
+    output:
+        store inference result in filename_CI
+    """
+
     ### CI store
     filename_CI = 'CI_store_T_%d_n_%d_S_init_int_simulation_1_2' %(T, n)
     outfile_CI = open(filename_CI, 'ab')
@@ -66,11 +79,8 @@ def main(seed = 1, T = 30, n = 25, N = 50, beta = 3/7, U_int_store = None):
         est_mean = pickle.load(outfile)[T][0]
         outfile.close()
     except:
-
         est_mean = 0.288
-
     count = 0
-
     for i in range(N):
         np.random.seed(((1 + seed) * N + (i + 1)) * 1234567)
         a.buffer = {} ## when using gen_buffer, we should empty the buffer first!!
@@ -87,52 +97,15 @@ def main(seed = 1, T = 30, n = 25, N = 50, beta = 3/7, U_int_store = None):
     f.write("Count %d in %d \r\n" % (count, N))
     f.close()
 
-##################
-## ablation ######
-##################
+##############################################################################################################
+############################################################################################################## 
+ 
+"""
+Below are implement about DR Method (Doubly robust off-policy value evaluation for reinforcement learning)
+"""
 
 
-def main_beta_ablation(seed = 1, T = 30, n = 25, N = 50, beta = 3/7, U_int_store = None):
-    ### CI store
-    filename_CI = 'CI_store_T_%d_n_%d_S_init_int_simulation_1_2' %(T, n)
-    outfile_CI = open(filename_CI, 'ab')
-    #####
-    total_N = T * n
-    L = int(np.sqrt((n*T)**beta))
-    env = setting_ablation(T = T)
-    a = simulation(env)
-    try:
-        filename = 'value_int_store'
-        outfile = open(filename,'rb')
-        est_mean = pickle.load(outfile)[T][0]
-        outfile.close()
-    except:
 
-        est_mean = 0.288
-
-    count = 0
-
-    for i in range(N):
-        np.random.seed(((1 + seed) * N + (i + 1)) * 1234567)
-        a.buffer = {} ## when using gen_buffer, we should empty the buffer first!!
-        a.gen_buffer(total_N = total_N, S_init = None, policy = a.obs_policy )
-        a.B_spline(L = max(7,(L + 3)), d = 3)
-        L = max(7,(L + 3)) - 3 ## L can not be 3 .. should be at least 4
-        lower_bound, upper_bound = a.inference_int(policy = target_policy, U_int_store = U_int_store)
-        pickle.dump([lower_bound, upper_bound], outfile_CI)
-        if lower_bound < est_mean and est_mean < upper_bound:
-            count += 1
-    print(count / N)
-    outfile_CI.close()
-    f = open("result_T_%d_n_%d_S_integration_L_%d_ablation.txt" %(T,n, L ), "a+")
-    f.write("Count %d in %d \r\n" % (count, N))
-    f.close()
-    
-    
-#main(seed = 0, T = 30, n = 25)
-#################################################################################################################################
-############################## COMPARE WITH DR  ############################################################################
-##################################################################################################################################################################################################################################################################
 #V^H = Vhat + rho(r + gamma V^{H-1} - Q)
 #V^H - 1 = Vhat + rho(r + gamma V^{H-2} - Q)
 #V^H - 2 = Vhat + rho(r + gamma V^{H-3} - Q)
@@ -140,9 +113,6 @@ def main_beta_ablation(seed = 1, T = 30, n = 25, N = 50, beta = 3/7, U_int_store
 #.
 #.
 #V^1 = Vhat + rho(r_H + gamma V^{0} - Q_H)
-#########################################################################
-#################################################################################################################################
-
 
 def train_target_policy(T = 30, n = 25, policy = target_policy):
 
