@@ -38,7 +38,7 @@ def get_sign(s):
         return "+"
     else: return "-"
 
-#### obtain estimated optimal policy ###
+#### obtain true value for estimated optimal policy by MC repetitions
 
     
     
@@ -95,7 +95,7 @@ def main(seed = 1, T = 120, n = 100, T_min = 30, n_min = 25, beta = 3/7, S_init 
         error_bound: stop error bound for double fitted q learning
         terminate_bound: iteration bound for double fitted q learning
         alpha: significance level
-        N: repetions
+        N: repetitions
     output:
         store inference result in filename_CI
     """

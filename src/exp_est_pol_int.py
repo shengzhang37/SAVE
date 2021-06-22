@@ -77,7 +77,7 @@ def main(seed = 1, T = 60, n = 25, T_min = 30, n_min = 25, beta = 3/7, error_bou
         error_bound: stop error bound for double fitted q learning
         terminate_bound: iteration bound for double fitted q learning
         alpha: significance level
-        N: repetions
+        N: repetitions
         MC_N: repetitions for MC in integration of the interval
         U_int_store = None : we use MC to get numerical integration for U 
     output:

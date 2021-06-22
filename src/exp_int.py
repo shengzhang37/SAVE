@@ -58,7 +58,7 @@ def main(seed = 1, T = 30, n = 25, N = 50, beta = 3/7, U_int_store = None):
         seed: random seed
         T : trajectory length
         n: sample size
-        N: repetions
+        N: repetitions
         beta: it is used to calculate the size of bspline basis
         U_int_store = None : we use MC to get numerical integration for U 
     output:
