@@ -15,14 +15,65 @@ from scipy import integrate
 from .utility import *
 from .AGENT import *
     
+
+def train_opt_policy(T = 30, n = 25, n_train = 25, error_bound = 0.005, terminate_bound = 50, output_path = "./output"):
+
+    total_N = T * n
+    beta = 3/7
+    L = int(np.sqrt((n_train * T)**beta))
+
+    ## generate data and basis spline
+    env = setting(T = T)
+    
+    a = simulation(env)
+
+    a.gen_buffer(total_N = total_N, S_init = None, policy = a.obs_policy )
+    a.B_spline(L = max(7,(L + 3)), d = 3)
+    ### estimate beta
+    error = 1
+    terminate_loop = 0 
+    ## if error < error_bound, it converges
+    print("start updating.......")
+    while error > error_bound and terminate_loop < terminate_bound:
+        a._stretch_para()
+        tmp = a.all_para
+        a.update_op()
+        a._stretch_para()
+        error = np.sqrt(np.mean((tmp - a.all_para)**2))
+        terminate_loop += 1
+        print("current error is %.4f, error bound is %.4f" %( error, error_bound))
+    print("end updating....")
+    
+    ### pickle the trained model
+    filename_train = 'train_opt_policy_with_T_%d_n_%d' %(T, n)
+    outfile_train = open(os.path.join(output_path, filename_train) , 'wb')
+    pickle.dump({'scaler' : a.scaler, 'bspline' : a.bspline, 'para' : a.para}, outfile_train)
+    outfile_train.close()
+
+    
+def store_data_set(L_list = [4,5,6,7], total_N = 12800, output_path = "./output"):
+    output = {}
+    
+    for L in L_list : 
+        env = setting(T = 32)
+        a = simulation(env)
+        a.gen_buffer(total_N = total_N, S_init = None, policy = a.obs_policy )
+        a.B_spline(L = (L + 3), d = 3)
+        output[str(L)] = {'buffer' : a.buffer, 'bspline' : a.bspline, 'para' : a.para, 'para_dim' : a.para_dim}
+    ### pickle the trained model
+    filename_data_set = 'store_data_set_total_N_%d' %(total_N)
+    outfile_data_set = open(os.path.join(output_path, filename_data_set) , 'wb')
+    pickle.dump(output, outfile_data_set)
+    outfile_data_set.close()
+
 #######################################################################################
 #######################################################################################
     
 ## get integrated value by MC repetitions
     
-def main_get_value(T_List = [30,50,70], rep = 100000, filename_train = 'train_opt_policy_with_T_60_n_500'):
+def main_get_value(T_List = [30,50,70], rep = 100000, filename_train = 'train_opt_policy_with_T_60_n_500', output_path = "./output"):
     ## obtain trained model
-    outfile_train = open(filename_train, 'rb')
+    outfile_train = open(os.path.join(output_path, filename_train), 'rb')
     output  =  pickle.load(outfile_train)
     outfile_train.close()
     ### obtain the pretrained optimal policy
@@ -55,7 +106,7 @@ def main_get_value(T_List = [30,50,70], rep = 100000, filename_train = 'train_op
         value_store[T].append(est_mean)
         
     filename = 'value_int_store_opt' 
-    outfile = open(filename,'wb')
+    outfile = open(os.path.join(output_path, filename),'wb')
     pickle.dump(value_store, outfile)
     outfile.close()
 
@@ -64,7 +115,7 @@ def main_get_value(T_List = [30,50,70], rep = 100000, filename_train = 'train_op
 ##############   main function  ##################################
 ##################################################################
 
-def main(seed = 1, T = 60, n = 25, T_min = 30, n_min = 25, beta = 3/7, error_bound = 0.01, N = 10, alpha = 0.05, terminate_bound = 30, U_int_store = None, MC_N = 10000):
+def main(seed = 1, T = 60, n = 25, T_min = 30, n_min = 25, beta = 3/7, error_bound = 0.01, N = 10, alpha = 0.05, terminate_bound = 30, U_int_store = None, MC_N = 10000, output_path = "./output"):
     """
     input: 
         seed: random seed
@@ -91,13 +142,14 @@ def main(seed = 1, T = 60, n = 25, T_min = 30, n_min = 25, beta = 3/7, error_bou
         exp_MC_N = MC_N
     filename_CI = 'CI_store_T_%d_n_%d_S_init_int_simulation_2_2_%d' %(T, n, exp_MC_N)
     #filename_CI = 'CI_store_T_%d_n_%d_S_init_int_simulation_2_2' %(T, n)
-    outfile_CI = open(filename_CI, 'ab')
+    outfile_CI = open(os.path.join(output_path, filename_CI) , 'ab')
     
     ## determine the true value
     try:
+        T_value = 50
         filename = 'value_int_store_opt'
-        outfile = open(filename,'rb')
-        est_mean = pickle.load(outfile)[50][0] 
+        outfile = open(os.path.join(output_path, filename),'rb')
+        est_mean = pickle.load(outfile)[T_value][0] 
         outfile.close()
     except:
         est_mean = 0
@@ -165,8 +217,8 @@ def main(seed = 1, T = 60, n = 25, T_min = 30, n_min = 25, beta = 3/7, error_bou
             count += 1
     outfile_CI.close()
                                 
-    print(count / N)
-    f = open("RESULT_opt_pol_T_%d_n_%d_S_init_integration_(K_n_%d_K_T_%d).txt" %(T,n, K_n, K_T), "a+")
+    print("Count of covered CI over all repetition : ", count / N)
+    f = open(os.path.join(output_path, "result_opt_pol_T_%d_n_%d_S_init_integration_(K_n_%d_K_T_%d).txt" %(T,n, K_n, K_T)) , "a+")
     f.write("Count %d in %d, estimated mean: %f, V_tilde_mean: %f (CI length : %f) \r\n" % (count, N, est_mean, np.mean(V_tilde_list), np.mean(CI_length_list) ))
     f.close()
     

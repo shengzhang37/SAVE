@@ -31,7 +31,7 @@ def target_policy(S):
     
 ## get the true value estimation by MC repetition
 
-def main_get_value(T_List = [30], rep = 1000000):
+def main_get_value(T_List = [30], rep = 1000000, output_path = "./output"):
     value_store = {}
     
     for T in T_List:
@@ -44,15 +44,16 @@ def main_get_value(T_List = [30], rep = 1000000):
         output, A_percent, _ = a.evaluate_policy(policy = target_policy, seed = None, S_init = None, n = rep)
         est_mean = np.mean(output)
         value_store[T].append(est_mean)
-        
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
     filename = 'value_int_store' 
-    outfile = open(filename,'wb')
+    outfile = open(os.path.join(output_path, filename),'wb')
     pickle.dump(value_store, outfile)
 
     
 ## main function
 
-def main(seed = 1, T = 30, n = 25, N = 50, beta = 3/7, U_int_store = None):
+def main(seed = 1, T = 30, n = 25, N = 50, beta = 3/7, U_int_store = None, output_path = "./output",):
     """
     input: 
         seed: random seed
@@ -67,7 +68,7 @@ def main(seed = 1, T = 30, n = 25, N = 50, beta = 3/7, U_int_store = None):
 
     ### CI store
     filename_CI = 'CI_store_T_%d_n_%d_S_init_int_simulation_1_2' %(T, n)
-    outfile_CI = open(filename_CI, 'ab')
+    outfile_CI = open(os.path.join(output_path, filename_CI), 'ab')
     #####
     total_N = T * n
     L = int(np.sqrt((n*T)**beta))
@@ -75,7 +76,7 @@ def main(seed = 1, T = 30, n = 25, N = 50, beta = 3/7, U_int_store = None):
     a = simulation(env)
     try:
         filename = 'value_int_store'
-        outfile = open(filename,'rb')
+        outfile = open(os.path.join(output_path, filename),'rb')
         est_mean = pickle.load(outfile)[T][0]
         outfile.close()
     except:
@@ -91,9 +92,9 @@ def main(seed = 1, T = 30, n = 25, N = 50, beta = 3/7, U_int_store = None):
         pickle.dump([lower_bound, upper_bound], outfile_CI)
         if lower_bound < est_mean and est_mean < upper_bound:
             count += 1
-    print(count / N)
+    print("Count of covered CI over all repetition : ", count / N)
     outfile_CI.close()
-    f = open("result_T_%d_n_%d_S_integration_L_%d.txt" %(T,n, L ), "a+")
+    f = open(os.path.join(output_path, "result_T_%d_n_%d_S_integration_L_%d.txt" %(T,n, L )), "a+")
     f.write("Count %d in %d \r\n" % (count, N))
     f.close()
 

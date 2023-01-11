@@ -46,11 +46,7 @@ For 2--4, we allow the setting to be nonregular where the optimal policy is not 
 ### Experiment on Simulation:
 
 
-`from src.exp_est_pol_int import *`
-
-`main_get_value() # get true value by repetitions` 
-
-`main()`
+Check `test.ipynb`
 
 
 ### Application to OhioT1DM:

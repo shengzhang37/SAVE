@@ -42,7 +42,7 @@ def get_sign(s):
 
     
     
-def off_policy_value(T = 120, n = 1000, n_train = 100, beta = 3/7, S_init = (0.5, 0.5), error_bound = 0.005, terminate_bound = 50, rep = 100):
+def off_policy_value(T = 120, n = 1000, n_train = 100, beta = 3/7, S_init = (0.5, 0.5), error_bound = 0.005, terminate_bound = 50, rep = 100, output_path = "./output"):
     total_N = T * n
     L = int(np.sqrt((n_train *T)**beta)) # note the number of basis should match the number of n in training period
     
@@ -75,14 +75,14 @@ def off_policy_value(T = 120, n = 1000, n_train = 100, beta = 3/7, S_init = (0.5
     print("output: %.3f(%.2f)" %(np.mean(output), np.std(output)/(rep **0.5)))
     
     filename = 'opt_value_store_T_%d_n_%d_S_init_%s%s' %(T, n_train, get_sign(S_init[0]), get_sign(S_init[1]))
-    outfile = open(filename,'wb')
+    outfile = open(os.path.join(output_path, filename),'wb')
     pickle.dump(output, outfile)
     outfile.close()
 
 
 ### Construct CI for True value ###
 
-def main(seed = 1, T = 120, n = 100, T_min = 30, n_min = 25, beta = 3/7, S_init = (0.5, 0.5), error_bound = 0.01, N = 10, alpha = 0.05, terminate_bound = 15):
+def main(seed = 1, T = 120, n = 100, T_min = 30, n_min = 25, beta = 3/7, S_init = (0.5, 0.5), error_bound = 0.01, N = 10, alpha = 0.05, terminate_bound = 15, output_path = "./output"):
     """
     input: 
         seed: random seed
@@ -101,8 +101,8 @@ def main(seed = 1, T = 120, n = 100, T_min = 30, n_min = 25, beta = 3/7, S_init 
     """
     ## obtain estimated mean
     try:
-        filename = 'opt_value_store_T_%d_n_%d_S_init_%s%s' %(500, 500, get_sign(S_init[0]), get_sign(S_init[1])) ## make decision
-        outfile = open(filename,'rb')
+        filename = 'opt_value_store_T_%d_n_%d_S_init_%s%s' %(120, 100, get_sign(S_init[0]), get_sign(S_init[1])) ## make decision
+        outfile = open(os.path.join(output_path, filename),'rb')
         output = pickle.load(outfile)
         outfile.close()
         est_mean = np.mean(output)
@@ -112,7 +112,7 @@ def main(seed = 1, T = 120, n = 100, T_min = 30, n_min = 25, beta = 3/7, S_init 
         mc_error = 0
     ## Store the CI!!
     filename_CI = 'CI_store_T_%d_n_%d_S_init_%s%s' %(T, n, get_sign(S_init[0]), get_sign(S_init[1]))
-    outfile_CI = open(filename_CI, 'ab')
+    outfile_CI = open(os.path.join(output_path, filename_CI), 'ab')
     ## use our method to get CI for the est_mean
     count = 0
     V_tilde_list = [] # store the V_tilde in N repetition
@@ -162,8 +162,8 @@ def main(seed = 1, T = 120, n = 100, T_min = 30, n_min = 25, beta = 3/7, S_init 
         if est_mean > lower_bound and est_mean < upper_bound:
             count += 1
     outfile_CI.close()
-    print(count / N)
-    f = open("RESULT_opt_pol_T_%d_n_%d_S_init_%s%s_(K_n_%d_K_T_%d).txt" %(T,n, get_sign(S_init[0]), get_sign(S_init[1]), K_n, K_T), "a+")
+    print("Count of covered CI over all repetition : ", count / N)
+    f = open(os.path.join(output_path, "result_opt_pol_T_%d_n_%d_S_init_%s%s_(K_n_%d_K_T_%d).txt" %(T,n, get_sign(S_init[0]), get_sign(S_init[1]), K_n, K_T)), "a+")
     f.write("Count %d in %d, estimated mean: %f(MC error: %f), V_tilde_mean: %f (CI length : %f) \r\n" % (count, N, est_mean, mc_error, np.mean(V_tilde_list), np.mean(CI_length_list) ))
     f.close()
     
